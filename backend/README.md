@@ -39,4 +39,6 @@ These were applied as initial defaults and can be changed in the next increment:
 - `GET /health`
 - `GET /api/v1/laptops`
 - `GET /api/v1/laptops/{laptop_id}`
-- `GET /api/v1/laptops/compare/{left_id}/{right_id}`
+- `GET /api/v1/laptops/compare?laptop_ids=<id>&laptop_ids=<id>`
+- `GET /api/v1/laptops/{laptop_id}/price-history`
+- `POST /api/v1/recommendations`
