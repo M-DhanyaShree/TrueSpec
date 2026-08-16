@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.db.session import SessionLocal
 from app.ingestion.review_quality import assess_review_text, normalized_hash
+from app.ml.sentiment import SentimentPredictor, rating_fallback_sentiment
 from app.models.laptop import Laptop
 from app.models.price_history import PriceHistory
 from app.models.review import Review
@@ -36,6 +37,11 @@ def _records(df: pd.DataFrame) -> list[dict[str, Any]]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Load processed seed CSV files into PostgreSQL.")
     parser.add_argument("--processed-dir", default="", help="Path to processed CSV directory")
+    parser.add_argument(
+        "--sentiment-model",
+        default="",
+        help="Optional path to trained sentiment joblib model (defaults to backend/models/sentiment_pipeline.pkl)",
+    )
     return parser.parse_args()
 
 
@@ -102,27 +108,69 @@ def _build_review_quality_report(reviews_df: pd.DataFrame, report_path: Path) ->
     return report_df
 
 
+def _to_float(value: Any) -> float | None:
+    try:
+        if value is None:
+            return None
+        if pd.isna(value):
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _build_sentiment_report(
+    review_records: list[dict[str, Any]],
+    report_path: Path,
+    predictor: SentimentPredictor | None,
+) -> pd.DataFrame:
+    rows: list[dict[str, Any]] = []
+    for row in review_records:
+        text = str(row.get("review_text") or "")
+        if predictor is not None:
+            pred = predictor.predict(text)
+            source = "ml_model"
+        else:
+            pred = rating_fallback_sentiment(_to_float(row.get("rating")))
+            source = "rating_fallback"
+
+        rows.append(
+            {
+                "sentiment_label": pred.label,
+                "sentiment_score": pred.score,
+                "sentiment_source": source,
+            }
+        )
+
+    report_df = pd.DataFrame(rows)
+    report_df.to_csv(report_path, index=False)
+    return report_df
+
+
 def main() -> int:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[2]
+    backend_dir = repo_root / "backend"
     processed_dir = Path(args.processed_dir).resolve() if args.processed_dir else repo_root / "data" / "processed"
+    sentiment_model_path = (
+        Path(args.sentiment_model).resolve() if args.sentiment_model else backend_dir / "models" / "sentiment_pipeline.pkl"
+    )
 
     laptops_df = _read_csv(processed_dir / "laptops.csv")
     specs_df = _read_csv(processed_dir / "laptop_specs.csv")
     reviews_df = _read_csv(processed_dir / "reviews.csv")
     prices_df = _read_csv(processed_dir / "price_history.csv")
-    quality_report_path = processed_dir / "review_quality_report.csv"
-    quality_report_df = _build_review_quality_report(reviews_df, quality_report_path)
+    review_records = _records(reviews_df)
 
-    quality_lookup = {
-        (
-            str(record.get("sku") or ""),
-            str(record.get("review_source") or "seed"),
-            str(record.get("external_id") or ""),
-            str(record.get("review_date") or ""),
-        ): record
-        for record in _records(quality_report_df)
-    }
+    predictor = SentimentPredictor.load(sentiment_model_path) if sentiment_model_path.exists() else None
+
+    quality_report_path = processed_dir / "review_quality_report.csv"
+    quality_report_df = _build_review_quality_report(pd.DataFrame(review_records), quality_report_path)
+    sentiment_report_path = processed_dir / "review_sentiment_report.csv"
+    sentiment_report_df = _build_sentiment_report(review_records, sentiment_report_path, predictor)
+
+    quality_rows = _records(quality_report_df)
+    sentiment_rows = _records(sentiment_report_df)
 
     session = SessionLocal()
     try:
@@ -168,17 +216,12 @@ def main() -> int:
         session.execute(delete(Review).where(Review.source == "seed"))
         session.execute(delete(PriceHistory).where(PriceHistory.source == "seed"))
 
-        for row in _records(reviews_df):
+        for idx, row in enumerate(review_records):
             laptop_id = sku_to_id.get(row["sku"])
             if not laptop_id or not row.get("review_text"):
                 continue
-            key = (
-                str(row.get("sku") or ""),
-                str(row.get("review_source") or "seed"),
-                str(row.get("external_id") or ""),
-                str(row.get("review_date") or ""),
-            )
-            quality_row = quality_lookup.get(key, {})
+            quality_row = quality_rows[idx] if idx < len(quality_rows) else {}
+            sentiment_row = sentiment_rows[idx] if idx < len(sentiment_rows) else {}
             review_dt = pd.to_datetime(row.get("review_date"), errors="coerce")
             created_at = None if pd.isna(review_dt) else review_dt.to_pydatetime()
             session.execute(
@@ -191,6 +234,8 @@ def main() -> int:
                     created_on_source_at=created_at,
                     is_suspected_low_quality=bool(quality_row.get("is_suspected_low_quality", False)),
                     low_quality_score=quality_row.get("low_quality_score"),
+                    sentiment_label=sentiment_row.get("sentiment_label"),
+                    sentiment_score=sentiment_row.get("sentiment_score"),
                 )
             )
 
@@ -221,6 +266,9 @@ def main() -> int:
             f"{len(prices_df.index)} prices from {processed_dir}."
         )
         print(f"Review quality report: {quality_report_path}")
+        print(f"Review sentiment report: {sentiment_report_path}")
+        if predictor is None:
+            print(f"Sentiment model not found at {sentiment_model_path}; using rating fallback labels.")
         return 0
     except Exception:
         session.rollback()

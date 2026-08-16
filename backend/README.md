@@ -11,8 +11,14 @@ This service is a standalone FastAPI backend for the TrueSpec platform.
 ## Seed data pipeline (Kaggle -> data/processed -> Postgres)
 - Normalize raw seed CSV from `data/raw/kaggle` into canonical files in `data/processed`
 - Apply heuristic low-quality review scoring and emit `review_quality_report.csv`
+- Run sentiment inference and emit `review_sentiment_report.csv`
 - Upsert laptops/specs and load seed reviews/price history into PostgreSQL
 - External sources (Reddit/YouTube/manufacturer scraping) are intentionally stubbed
+
+## Sentiment model artifacts
+- Train with `scripts/train_sentiment_model.py` using labeled review CSV input.
+- Model output path: `backend/models/sentiment_pipeline.pkl`
+- Metrics output path: `backend/models/sentiment_metrics.json`
 
 See [scripts/README.md](scripts/README.md) for commands.
 
