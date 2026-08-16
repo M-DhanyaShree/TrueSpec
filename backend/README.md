@@ -8,6 +8,13 @@ This service is a standalone FastAPI backend for the TrueSpec platform.
 - Alembic migration setup and initial schema migration
 - Basic health endpoint and laptop API skeleton
 
+## Seed data pipeline (Kaggle -> data/processed -> Postgres)
+- Normalize raw seed CSV from `data/raw/kaggle` into canonical files in `data/processed`
+- Upsert laptops/specs and load seed reviews/price history into PostgreSQL
+- External sources (Reddit/YouTube/manufacturer scraping) are intentionally stubbed
+
+See [scripts/README.md](scripts/README.md) for commands.
+
 ## Explicit MVP defaults adopted
 These were applied as initial defaults and can be changed in the next increment:
 - Recommendation roles: student, developer, creator, business, gaming, general
