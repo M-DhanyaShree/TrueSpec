@@ -10,6 +10,7 @@ This service is a standalone FastAPI backend for the TrueSpec platform.
 
 ## Seed data pipeline (Kaggle -> data/processed -> Postgres)
 - Normalize raw seed CSV from `data/raw/kaggle` into canonical files in `data/processed`
+- Apply heuristic low-quality review scoring and emit `review_quality_report.csv`
 - Upsert laptops/specs and load seed reviews/price history into PostgreSQL
 - External sources (Reddit/YouTube/manufacturer scraping) are intentionally stubbed
 
