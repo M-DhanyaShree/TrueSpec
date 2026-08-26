@@ -35,22 +35,27 @@ def get_db_engine(force_sqlite=False):
         os.makedirs(db_path.parent, exist_ok=True)
         return create_engine(f"sqlite:///{db_path}")
 
-    # MySQL connection string
+    # MySQL connection string - try mysqlconnector then pymysql
     password_part = f":{DB_PASSWORD}" if DB_PASSWORD else ""
-    mysql_uri = f"mysql+mysqlconnector://{DB_USER}{password_part}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    try:
-        engine = create_engine(mysql_uri, pool_pre_ping=True)
-        # Test connection
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return engine
-    except Exception as e:
-        # Fallback to local SQLite file in data/ if MySQL server is not running locally
-        print(f"[TrueSpec DB] Notice: Local MySQL ({mysql_uri}) not reachable ({e}).")
-        print("[TrueSpec DB] Using local data/truespec.db SQLite fallback so pipeline runs uninterrupted.")
-        db_path = Path(__file__).resolve().parent.parent / 'data' / 'truespec.db'
-        os.makedirs(db_path.parent, exist_ok=True)
-        return create_engine(f"sqlite:///{db_path}")
+    drivers = ["mysqlconnector", "pymysql"]
+    
+    for driver in drivers:
+        mysql_uri = f"mysql+{driver}://{DB_USER}{password_part}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        try:
+            engine = create_engine(mysql_uri, pool_pre_ping=True)
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            print(f"[TrueSpec DB] Successfully connected to MySQL ({DB_HOST}:{DB_PORT}/{DB_NAME}) using {driver}.")
+            return engine
+        except Exception:
+            continue
+
+    # Fallback to local SQLite file in data/ if MySQL server is not running locally
+    print(f"[TrueSpec DB] Notice: Local MySQL on {DB_HOST}:{DB_PORT}/{DB_NAME} not reachable.")
+    print("[TrueSpec DB] Using local data/truespec.db SQLite fallback so pipeline runs uninterrupted.")
+    db_path = Path(__file__).resolve().parent.parent / 'data' / 'truespec.db'
+    os.makedirs(db_path.parent, exist_ok=True)
+    return create_engine(f"sqlite:///{db_path}")
 
 def init_tables_if_needed(engine):
     """

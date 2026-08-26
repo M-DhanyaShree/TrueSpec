@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
 import { z } from 'zod';
 import { getDb } from '../db';
 import { computeRecommendations, RecommendationRequest } from '../services/recommendationEngine';
 import { resetAndSeedCleanDataset } from '../seeds/defaultData';
-import { exec } from 'child_process';
-import path from 'path';
+import { ingestCsvDatasetsToMySql } from '../seeds/csvSeeder';
 
 const router = Router();
 
@@ -401,15 +403,25 @@ router.post('/admin/seed', async (req: Request, res: Response) => {
   }
 });
 
-// Reseed and restore verified catalog with authentic INR pricing and full sentiment labels
+// Reseed and restore verified catalog with authentic INR pricing and full sentiment labels from dataset CSVs
 router.post('/reseed', async (req: Request, res: Response) => {
   try {
     const db = await getDb();
-    await resetAndSeedCleanDataset(db);
-    res.json({
-      success: true,
-      message: 'Successfully reset database to clean TrueSpec verified catalog with INR pricing and sentiment scores!'
-    });
+    const csvPath = path.resolve(__dirname, '../../../data/raw/laptops_cleaned.csv');
+    if (fs.existsSync(csvPath)) {
+      const result = await ingestCsvDatasetsToMySql(db);
+      return res.json({
+        success: true,
+        message: `Successfully ingested dataset from CSV files into MySQL (${result.laptops} laptops, ${result.reviews} reviews, ${result.scores} scores)!`,
+        stats: result
+      });
+    } else {
+      await resetAndSeedCleanDataset(db);
+      return res.json({
+        success: true,
+        message: 'Successfully reset database to clean TrueSpec verified catalog with INR pricing and sentiment scores!'
+      });
+    }
   } catch (err: any) {
     console.error('Error reseeding dataset:', err);
     res.status(500).json({ error: 'Failed to reseed dataset', details: err.message });

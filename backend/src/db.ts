@@ -1,7 +1,10 @@
+import fs from 'fs';
+import path from 'path';
 import knex, { Knex } from 'knex';
 import config from '../knexfile';
 import { up as initializeSchema } from './migrations/20240101000000_create_truespec_schema';
 import { seedDefaultLaptopsIfEmpty } from './seeds/defaultData';
+import { ingestCsvDatasetsToMySql } from './seeds/csvSeeder';
 
 let dbInstance: Knex | null = null;
 
@@ -64,8 +67,25 @@ async function ensureSchemaAndSeed(db: Knex): Promise<void> {
     }
   }
 
-  // Ensure default data is populated if empty
-  await seedDefaultLaptopsIfEmpty(db);
+  // Ensure data is populated from datasets if empty
+  const laptopCountRes = await db('laptops').count<{ total: number }>('id as total').first().catch(() => null);
+  const currentCount = laptopCountRes ? Number(laptopCountRes.total) : 0;
+  if (currentCount === 0) {
+    const csvPath = path.resolve(__dirname, '../../data/raw/laptops_cleaned.csv');
+    if (fs.existsSync(csvPath)) {
+      console.log('[TrueSpec Backend] Database is empty. Ingesting dataset CSV files directly into MySQL...');
+      try {
+        await ingestCsvDatasetsToMySql(db);
+      } catch (err: any) {
+        console.warn('[TrueSpec Backend] CSV seed attempt noticed:', err.message);
+        await seedDefaultLaptopsIfEmpty(db);
+      }
+    } else {
+      await seedDefaultLaptopsIfEmpty(db);
+    }
+  } else {
+    console.log(`[TrueSpec Backend] Using existing database records (${currentCount} laptops found in MySQL).`);
+  }
 }
 
 export async function getDb(): Promise<Knex> {
