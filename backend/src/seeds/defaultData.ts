@@ -892,6 +892,16 @@ export const DEFAULT_LAPTOPS: DefaultLaptopSeed[] = [
   }
 ];
 
+export async function resetAndSeedCleanDataset(knex: Knex): Promise<void> {
+  console.log('[TrueSpec Auto-Seeder] Resetting database tables to clean state...');
+  await knex('laptop_scores').del().catch(() => {});
+  await knex('reviews').del().catch(() => {});
+  await knex('laptops').del().catch(() => {});
+
+  console.log('[TrueSpec Auto-Seeder] Populating 36+ verified INR laptops and confidence scores...');
+  await seedDefaultLaptopsIfEmpty(knex);
+}
+
 export async function seedDefaultLaptopsIfEmpty(knex: Knex): Promise<void> {
   const laptopCountRes = await knex('laptops').count<{ total: number }>('id as total').first();
   const currentCount = laptopCountRes ? Number(laptopCountRes.total) : 0;

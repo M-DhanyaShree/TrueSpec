@@ -16,6 +16,42 @@ async function ensureSchemaAndSeed(db: Knex): Promise<void> {
     console.log('[TrueSpec Backend] Schema tables initialized successfully.');
   }
 
+  // Ensure all columns exist in `reviews` table (auto-heal older schemas)
+  if (await db.schema.hasTable('reviews')) {
+    const hasSentiment = await db.schema.hasColumn('reviews', 'sentiment_label');
+    const hasFlagged = await db.schema.hasColumn('reviews', 'is_flagged');
+    const hasSource = await db.schema.hasColumn('reviews', 'source');
+    const hasVerified = await db.schema.hasColumn('reviews', 'verified_purchase');
+
+    if (!hasSentiment || !hasFlagged || !hasSource || !hasVerified) {
+      console.log('[TrueSpec Backend] Adding missing columns to reviews table...');
+      await db.schema.alterTable('reviews', (table) => {
+        if (!hasSentiment) table.string('sentiment_label', 50).nullable().index();
+        if (!hasFlagged) table.boolean('is_flagged').notNullable().defaultTo(false).index();
+        if (!hasSource) table.string('source', 100).nullable().defaultTo('Verified Customer');
+        if (!hasVerified) table.boolean('verified_purchase').notNullable().defaultTo(true);
+      });
+      console.log('[TrueSpec Backend] Reviews table schema updated.');
+    }
+  }
+
+  // Ensure all columns exist in `laptop_scores` table
+  if (await db.schema.hasTable('laptop_scores')) {
+    const hasConf = await db.schema.hasColumn('laptop_scores', 'confidence_score');
+    const hasWilson = await db.schema.hasColumn('laptop_scores', 'wilson_lower_bound');
+    const hasPositive = await db.schema.hasColumn('laptop_scores', 'positive_ratio');
+
+    if (!hasConf || !hasWilson || !hasPositive) {
+      console.log('[TrueSpec Backend] Adding missing columns to laptop_scores table...');
+      await db.schema.alterTable('laptop_scores', (table) => {
+        if (!hasConf) table.float('confidence_score').notNullable().defaultTo(50.0).index();
+        if (!hasWilson) table.float('wilson_lower_bound').notNullable().defaultTo(0.5);
+        if (!hasPositive) table.float('positive_ratio').notNullable().defaultTo(50.0);
+      });
+      console.log('[TrueSpec Backend] laptop_scores table schema updated.');
+    }
+  }
+
   // Ensure default data is populated if empty
   await seedDefaultLaptopsIfEmpty(db);
 }

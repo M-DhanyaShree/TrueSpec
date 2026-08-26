@@ -298,7 +298,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-1.5 pt-4">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -307,19 +307,39 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
                 Previous
               </button>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
-                    p === page
-                      ? 'bg-truespec-600 text-white'
-                      : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+              {(() => {
+                const pages: (number | string)[] = [];
+                if (totalPages <= 7) {
+                  for (let i = 1; i <= totalPages; i++) pages.push(i);
+                } else {
+                  pages.push(1);
+                  if (page > 3) pages.push('...');
+                  const start = Math.max(2, page - 1);
+                  const end = Math.min(totalPages - 1, page + 1);
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  if (page < totalPages - 2) pages.push('...');
+                  pages.push(totalPages);
+                }
+                return pages.map((p, idx) => (
+                  typeof p === 'number' ? (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition-colors ${
+                        p === page
+                          ? 'bg-truespec-600 text-white'
+                          : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ) : (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-xs text-slate-400 font-bold">
+                      ...
+                    </span>
+                  )
+                ));
+              })()}
 
               <button
                 disabled={page >= totalPages}

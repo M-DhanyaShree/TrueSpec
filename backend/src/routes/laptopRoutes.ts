@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { getDb } from '../db';
 import { computeRecommendations, RecommendationRequest } from '../services/recommendationEngine';
+import { resetAndSeedCleanDataset } from '../seeds/defaultData';
 import { exec } from 'child_process';
 import path from 'path';
 
@@ -144,9 +145,16 @@ router.get('/compare', async (req: Request, res: Response) => {
     }
 
     // Sentiment breakdown for each compared laptop
-    const reviews = await db('reviews')
-      .whereIn('laptop_id', idList)
-      .select('laptop_id', 'sentiment_label', 'is_flagged');
+    let reviews: any[] = [];
+    try {
+      reviews = await db('reviews')
+        .whereIn('laptop_id', idList)
+        .select('laptop_id', 'sentiment_label', 'is_flagged');
+    } catch (reviewErr) {
+      console.warn('[TrueSpec] Reviews query notice in compare:', (reviewErr as any)?.message);
+      // Fallback if older schema
+      reviews = [];
+    }
 
     const laptopsWithDetails = laptops.map(lap => {
       const lapReviews = reviews.filter(r => r.laptop_id === lap.id);
@@ -390,6 +398,21 @@ router.post('/admin/seed', async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('Error running admin seed:', err);
     res.status(500).json({ error: 'Internal server error running seed', details: err.message });
+  }
+});
+
+// Reseed and restore verified catalog with authentic INR pricing and full sentiment labels
+router.post('/reseed', async (req: Request, res: Response) => {
+  try {
+    const db = await getDb();
+    await resetAndSeedCleanDataset(db);
+    res.json({
+      success: true,
+      message: 'Successfully reset database to clean TrueSpec verified catalog with INR pricing and sentiment scores!'
+    });
+  } catch (err: any) {
+    console.error('Error reseeding dataset:', err);
+    res.status(500).json({ error: 'Failed to reseed dataset', details: err.message });
   }
 });
 
