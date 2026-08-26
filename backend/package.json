@@ -10,7 +10,7 @@
     "test": "jest --forceExit",
     "migrate": "knex migrate:latest --knexfile knexfile.ts",
     "migrate:rollback": "knex migrate:rollback --knexfile knexfile.ts",
-    "seed": "node -e 'require(\"./dist/services/seedService\").runSeedGlue()'"
+    "seed": "tsx src/seeds/seed.ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.8.1",
