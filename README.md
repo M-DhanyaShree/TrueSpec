@@ -1,4 +1,4 @@
-# TrueSpec — Data-Driven Hardware & Sentiment Intelligence Platform
+# TrueSpec - Intelligent Laptop Advisor
 
 > **An end-to-end, full-stack recommendation engine and sentiment analysis system that translates raw hardware benchmarks and verified customer feedback into objective, plain-English buying decisions.**
 
