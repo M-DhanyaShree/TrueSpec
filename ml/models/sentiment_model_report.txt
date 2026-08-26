@@ -1,0 +1,36 @@
+=====================================================
+TrueSpec ML Pipeline - Sentiment Model Training Report
+=====================================================
+
+Training Dataset: /app/applet/data/raw/Laptop_Train_v2.csv
+Total Samples: 556 (Train: 444, Test: 112)
+Class Mapping: conflict -> neutral
+
+--- Candidate 1: TF-IDF + Logistic Regression ---
+  Accuracy:       0.9286
+  Macro Precision:0.9326
+  Macro Recall:   0.9305
+  Macro F1-Score: 0.9307
+
+--- Candidate 2: TF-IDF + Multinomial Naive Bayes ---
+  Accuracy:       0.9554
+  Macro Precision:0.9554
+  Macro Recall:   0.9577
+  Macro F1-Score: 0.9550
+
+=====================================================
+CHAMPION MODEL SELECTED: TF-IDF + Multinomial Naive Bayes
+Selection Criterion: Highest Macro F1-Score (0.9550)
+=====================================================
+
+Champion Classification Report:
+              precision    recall  f1-score   support
+
+    negative       0.97      0.95      0.96        40
+     neutral       0.89      1.00      0.94        33
+    positive       1.00      0.92      0.96        39
+
+    accuracy                           0.96       112
+   macro avg       0.96      0.96      0.95       112
+weighted avg       0.96      0.96      0.96       112
+

@@ -1,0 +1,6 @@
+{
+  "name": "TrueSpec — Intelligent Laptop Advisor",
+  "description": "ML-powered laptop recommendation engine combining spec matching with confidence-weighted sentiment analysis and fake review detection.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "truespec-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"blue.bold,green.bold\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:backend": "npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "test:backend": "npm run test --prefix backend",
+    "test:frontend": "npm run test --prefix frontend",
+    "test:ml": "PYTHONPATH=. pytest ml/tests/ -v",
+    "test": "npm run test:backend && npm run test:frontend && npm run test:ml",
+    "lint": "tsc --noEmit --project backend/tsconfig.json && tsc --noEmit --project frontend/tsconfig.json",
+    "ml:pipeline": "PYTHONPATH=. python3 ml/pipeline.py"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4",
+    "typescript": "^7.0.2"
+  }
+}

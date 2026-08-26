@@ -1,0 +1,7 @@
+[
+  "ml/tests/test_heuristics_and_scoring.py::TestFakeReviewHeuristics::test_single_heuristic_does_not_flag",
+  "ml/tests/test_heuristics_and_scoring.py::TestFakeReviewHeuristics::test_two_or_more_heuristics_triggers_flag",
+  "ml/tests/test_heuristics_and_scoring.py::TestFakeReviewHeuristics::test_verified_purchase_true_default_does_not_cause_flagging",
+  "ml/tests/test_heuristics_and_scoring.py::TestWilsonScoreAndConfidence::test_small_sample_scores_lower_than_large_sample",
+  "ml/tests/test_heuristics_and_scoring.py::TestWilsonScoreAndConfidence::test_zero_and_boundary_cases"
+]
