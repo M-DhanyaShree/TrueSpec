@@ -2,7 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Laptop } from '../types';
 import { ConfidenceBadge } from './ConfidenceBadge';
-import { Battery, Cpu, HardDrive, Monitor, Scale, Sparkles, Check } from 'lucide-react';
+import { Battery, Cpu, HardDrive, Monitor, Scale, Sparkles, Check, Info } from 'lucide-react';
+import { formatINR } from '../utils/formatters';
 
 interface LaptopCardProps {
   laptop: Laptop;
@@ -21,19 +22,19 @@ export const LaptopCard: React.FC<LaptopCardProps> = ({
   const badges: { text: string; color: string }[] = [];
 
   if (laptop.battery_wh >= 70) {
-    badges.push({ text: 'All-Day Battery', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' });
+    badges.push({ text: '🔋 All-Day Battery', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' });
   }
   if (laptop.weight_kg <= 1.35) {
-    badges.push({ text: 'Featherlight (<1.35kg)', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' });
+    badges.push({ text: '🪶 Featherlight (<1.35kg)', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' });
   }
   if (laptop.gpu_score >= 75) {
-    badges.push({ text: 'Dedicated GPU', color: 'bg-purple-50 text-purple-700 border-purple-200' });
+    badges.push({ text: '⚡ Dedicated GPU', color: 'bg-purple-50 text-purple-700 border-purple-200' });
   }
   if (laptop.refresh_rate >= 120) {
-    badges.push({ text: `${laptop.refresh_rate}Hz Smooth Display`, color: 'bg-sky-50 text-sky-700 border-sky-200' });
+    badges.push({ text: `✨ Smooth ${laptop.refresh_rate}Hz Screen`, color: 'bg-sky-50 text-sky-700 border-sky-200' });
   }
   if (laptop.ram_gb >= 32) {
-    badges.push({ text: '32GB Pro Multitasking', color: 'bg-amber-50 text-amber-700 border-amber-200' });
+    badges.push({ text: '🚀 32GB Heavy Multitasking', color: 'bg-amber-50 text-amber-700 border-amber-200' });
   }
 
   return (
@@ -58,10 +59,10 @@ export const LaptopCard: React.FC<LaptopCardProps> = ({
             </Link>
           </div>
 
-          <div className="text-right">
-            <span className="text-xs text-slate-500 font-medium block">Price</span>
-            <span className="text-xl font-extrabold text-slate-900">
-              ${laptop.price.toLocaleString()}
+          <div className="text-right shrink-0">
+            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Price</span>
+            <span className="text-lg sm:text-xl font-extrabold text-slate-900">
+              {formatINR(laptop.price)}
             </span>
           </div>
         </div>
@@ -73,8 +74,8 @@ export const LaptopCard: React.FC<LaptopCardProps> = ({
             wilsonLowerBound={laptop.wilson_lower_bound}
             size="sm"
           />
-          <span className="text-xs text-slate-500">
-            {laptop.clean_review_count ?? 0} clean reviews
+          <span className="text-xs text-slate-500 font-medium">
+            {laptop.clean_review_count ?? 0} verified reviews
           </span>
         </div>
 
@@ -94,30 +95,30 @@ export const LaptopCard: React.FC<LaptopCardProps> = ({
         {highlightWhy && (
           <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-100 text-xs text-slate-700 leading-relaxed">
             <div className="flex items-center gap-1.5 text-sky-800 font-bold mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Why TrueSpec Recommends This:</span>
+              <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+              <span>Why This Fits You:</span>
             </div>
             <p className="line-clamp-3">{highlightWhy}</p>
           </div>
         )}
 
-        {/* Key Hardware Specs for Non-Technical Users */}
+        {/* Key Hardware Specs for Normal Users */}
         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs text-slate-600">
-          <div className="flex items-center gap-1.5" title={laptop.cpu_name}>
+          <div className="flex items-center gap-1.5" title={`Processor: ${laptop.cpu_name}`}>
             <Cpu className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className="truncate">{laptop.cpu_name}</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5" title={`Memory: ${laptop.ram_gb}GB, Storage: ${laptop.storage_gb}GB SSD`}>
             <HardDrive className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>{laptop.ram_gb}GB RAM • {laptop.storage_gb}GB</span>
+            <span>{laptop.ram_gb}GB • {laptop.storage_gb}GB SSD</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5" title={`Display: ${laptop.display_size} inches`}>
             <Monitor className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>{laptop.display_size}" Display</span>
+            <span>{laptop.display_size}" Display ({laptop.refresh_rate}Hz)</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5" title={`Battery: ${laptop.battery_wh}Wh, Weight: ${laptop.weight_kg}kg`}>
             <Battery className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>{laptop.battery_wh}Wh Battery</span>
+            <span>{laptop.battery_wh}Wh • {laptop.weight_kg}kg</span>
           </div>
         </div>
       </div>
@@ -136,7 +137,7 @@ export const LaptopCard: React.FC<LaptopCardProps> = ({
             {isCompared ? (
               <>
                 <Check className="w-3.5 h-3.5 text-white" />
-                <span>Added</span>
+                <span>Added to Compare</span>
               </>
             ) : (
               <>

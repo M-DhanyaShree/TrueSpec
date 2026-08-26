@@ -18,6 +18,7 @@ import {
   Sparkles,
   AlertTriangle
 } from 'lucide-react';
+import { formatINR } from '../utils/formatters';
 
 interface ComparePageProps {
   comparedLaptops: Laptop[];
@@ -138,7 +139,7 @@ export const ComparePage: React.FC<ComparePageProps> = ({
             <span>Side-by-Side Laptop Comparison</span>
           </h1>
           <p className="text-slate-600 text-sm mt-1">
-            Compare specifications, TrueSpec confidence scores, and real user review distributions.
+            Compare specifications, TrueSpec confidence scores, and real user review distributions in INR (₹).
           </p>
         </div>
 
@@ -181,7 +182,7 @@ export const ComparePage: React.FC<ComparePageProps> = ({
                     >
                       <div>
                         <p className="font-bold text-slate-800">{result.brand} {result.model_name}</p>
-                        <p className="text-[10px] text-slate-500">${result.price} • {result.confidence_score}/100 Conf.</p>
+                        <p className="text-[10px] text-slate-500">{formatINR(result.price)} • {result.confidence_score}/100 Conf.</p>
                       </div>
                       <Plus className="w-3.5 h-3.5 text-truespec-600" />
                     </button>
@@ -247,12 +248,12 @@ export const ComparePage: React.FC<ComparePageProps> = ({
                       </Link>
 
                       <div className="flex items-baseline gap-1 pt-1">
-                        <span className="text-xl font-extrabold text-slate-900">
-                          ${lap.price.toLocaleString()}
+                        <span className="text-xl font-black text-slate-900">
+                          {formatINR(lap.price)}
                         </span>
                         {lap.price === bestPrice && (
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full ml-1">
-                            Lowest Price
+                            Best Value Price
                           </span>
                         )}
                       </div>

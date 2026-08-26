@@ -19,8 +19,11 @@ import {
   Info,
   ShieldAlert,
   Calendar,
-  UserCheck
+  UserCheck,
+  Sparkles,
+  HelpCircle
 } from 'lucide-react';
+import { formatINR, SPEC_EXPLANATIONS } from '../utils/formatters';
 
 interface LaptopDetailPageProps {
   comparedLaptops: Laptop[];
@@ -125,7 +128,7 @@ export const LaptopDetailPage: React.FC<LaptopDetailPageProps> = ({
           onClick={() => onToggleCompare(laptop)}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
             isCompared
-              ? 'bg-truespec-600 text-white border-truespec-600'
+              ? 'bg-truespec-600 text-white border-truespec-600 shadow-sm'
               : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
           }`}
         >
@@ -165,72 +168,78 @@ export const LaptopDetailPage: React.FC<LaptopDetailPageProps> = ({
             </h1>
 
             <div className="flex items-baseline gap-2 pt-1">
-              <span className="text-3xl font-extrabold text-slate-900">
-                ${laptop.price.toLocaleString()}
+              <span className="text-3xl font-black text-slate-900">
+                {formatINR(laptop.price)}
               </span>
-              <span className="text-xs text-slate-500 font-medium">USD Retail MSRP</span>
+              <span className="text-xs text-slate-500 font-medium">Estimated Retail Price (INR)</span>
             </div>
           </div>
 
           {/* Plain-English Spec Breakdown */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-xs">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
-              Hardware Specifications Breakdown
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-truespec-600" />
+                <span>Plain-English Hardware Guide</span>
+              </h2>
+              <span className="text-[11px] text-slate-400 font-medium">Simplified for everyone</span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
                   <Cpu className="w-4 h-4 text-truespec-600" />
-                  <span>Processor (CPU)</span>
+                  <span>Processor (CPU): {laptop.cpu_name}</span>
                 </div>
-                <p className="text-xs font-semibold text-slate-800">{laptop.cpu_name}</p>
-                <p className="text-[11px] text-slate-500">Benchmark Tier: {laptop.cpu_score}/100 power rating</p>
+                <p className="text-xs text-slate-600">{SPEC_EXPLANATIONS.cpu.simpleDesc}</p>
+                <p className="text-[11px] font-semibold text-truespec-700 pt-1">Performance Tier: {laptop.cpu_score}/100</p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
                   <Cpu className="w-4 h-4 text-purple-600" />
-                  <span>Graphics (GPU)</span>
+                  <span>Graphics (GPU): {laptop.gpu_name}</span>
                 </div>
-                <p className="text-xs font-semibold text-slate-800">{laptop.gpu_name}</p>
-                <p className="text-[11px] text-slate-500">GPU Tier: {laptop.gpu_score}/100 3D & render capacity</p>
+                <p className="text-xs text-slate-600">{SPEC_EXPLANATIONS.gpu.simpleDesc}</p>
+                <p className="text-[11px] font-semibold text-purple-700 pt-1">3D Graphics Tier: {laptop.gpu_score}/100</p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
                   <HardDrive className="w-4 h-4 text-amber-600" />
-                  <span>RAM & Storage</span>
+                  <span>RAM & Storage: {laptop.ram_gb}GB • {laptop.storage_gb}GB</span>
                 </div>
-                <p className="text-xs font-semibold text-slate-800">{laptop.ram_gb}GB RAM • {laptop.storage_gb}GB {laptop.storage_type}</p>
-                <p className="text-[11px] text-slate-500">High-speed NVMe solid-state storage</p>
+                <p className="text-xs text-slate-600">{SPEC_EXPLANATIONS.ram.simpleDesc}</p>
+                <p className="text-[11px] text-slate-500 pt-1">Fast NVMe SSD storage for instant booting.</p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
                   <Monitor className="w-4 h-4 text-sky-600" />
-                  <span>Display & Refresh</span>
+                  <span>Display: {laptop.display_size}" @ {laptop.refresh_rate}Hz</span>
                 </div>
-                <p className="text-xs font-semibold text-slate-800">{laptop.display_size}" Diagonal @ {laptop.refresh_rate}Hz</p>
-                <p className="text-[11px] text-slate-500">{laptop.refresh_rate >= 120 ? 'Ultra-fluid high frame rate' : 'Standard 60Hz energy efficient'}</p>
+                <p className="text-xs text-slate-600">
+                  {laptop.refresh_rate >= 120 ? 'Ultra-fluid 120Hz+ screen with silk-smooth scrolling.' : 'Sharp standard 60Hz energy-efficient display.'}
+                </p>
+                <p className="text-[11px] text-slate-500 pt-1">{laptop.display_size >= 15.6 ? 'Spacious desktop replacement' : 'Compact travel friendly'}</p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
                   <Battery className="w-4 h-4 text-emerald-600" />
-                  <span>Battery Capacity</span>
+                  <span>Battery Capacity: {laptop.battery_wh} Wh</span>
                 </div>
-                <p className="text-xs font-semibold text-slate-800">{laptop.battery_wh} Watt-Hours (Wh)</p>
-                <p className="text-[11px] text-slate-500">{laptop.battery_wh >= 70 ? 'Superior all-day longevity' : 'Standard workday capacity'}</p>
+                <p className="text-xs text-slate-600">{SPEC_EXPLANATIONS.battery.simpleDesc}</p>
+                <p className="text-[11px] font-semibold text-emerald-700 pt-1">{laptop.battery_wh >= 70 ? '🔋 Excellent All-Day Runtime' : 'Standard Full Workday Capacity'}</p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
                   <Scale className="w-4 h-4 text-indigo-600" />
-                  <span>Weight & Portability</span>
+                  <span>Chassis Weight: {laptop.weight_kg} kg</span>
                 </div>
-                <p className="text-xs font-semibold text-slate-800">{laptop.weight_kg} kg ({Math.round(laptop.weight_kg * 2.20462 * 10) / 10} lbs)</p>
-                <p className="text-[11px] text-slate-500">{laptop.weight_kg <= 1.4 ? 'Featherlight commuter build' : 'Sturdy workstation chassis'}</p>
+                <p className="text-xs text-slate-600">{SPEC_EXPLANATIONS.weight.simpleDesc}</p>
+                <p className="text-[11px] font-semibold text-indigo-700 pt-1">{laptop.weight_kg <= 1.35 ? '🪶 Featherlight Backpack Fit' : 'Solid Workstation Build'}</p>
               </div>
             </div>
           </div>
@@ -316,7 +325,7 @@ export const LaptopDetailPage: React.FC<LaptopDetailPageProps> = ({
               Authenticated User Reviews ({totalReviewsCount})
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Read real user reviews with NLP sentiment tags and flagged fake-detection notices.
+              Read verified customer reviews with sentiment tags and flagged fake-detection notices.
             </p>
           </div>
 
@@ -424,7 +433,7 @@ export const LaptopDetailPage: React.FC<LaptopDetailPageProps> = ({
                     <div className="text-[11px] text-rose-700 bg-rose-100/60 p-2 rounded-lg border border-rose-200 flex items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                       <span>
-                        <strong>TrueSpec Shield Note:</strong> This review triggered 2+ fraud heuristics (duplicate copy, unverified buyer, or promotional keyword patterns) and was excluded from the TrueSpec confidence calculation.
+                        <strong>TrueSpec Shield Note:</strong> This review triggered spam/bot detection rules (duplicate text, unverified buyer, or promotional links) and was automatically excluded from the final TrueSpec score.
                       </span>
                     </div>
                   )}

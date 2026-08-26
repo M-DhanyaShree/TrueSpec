@@ -10,8 +10,10 @@ import {
   RefreshCw,
   X,
   Laptop as LaptopIcon,
-  ShieldCheck
+  ShieldCheck,
+  IndianRupee
 } from 'lucide-react';
+import { formatINR } from '../utils/formatters';
 
 interface BrowsePageProps {
   comparedLaptops: Laptop[];
@@ -28,6 +30,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
   const [search, setSearch] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedBudgetBracket, setSelectedBudgetBracket] = useState('all');
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
   const [sortBy, setSortBy] = useState('confidence_score');
@@ -40,6 +43,28 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
   useEffect(() => {
     fetchPlatformStats().then(setStats).catch(() => null);
   }, []);
+
+  // Handle budget bracket quick select
+  const handleBudgetSelect = (bracket: string) => {
+    setSelectedBudgetBracket(bracket);
+    setPage(1);
+    if (bracket === 'under-50k') {
+      setMinPrice(undefined);
+      setMaxPrice(50000);
+    } else if (bracket === '50k-100k') {
+      setMinPrice(50000);
+      setMaxPrice(100000);
+    } else if (bracket === '100k-150k') {
+      setMinPrice(100000);
+      setMaxPrice(150000);
+    } else if (bracket === 'above-150k') {
+      setMinPrice(150000);
+      setMaxPrice(undefined);
+    } else {
+      setMinPrice(undefined);
+      setMaxPrice(undefined);
+    }
+  };
 
   // Load laptops on filter change
   useEffect(() => {
@@ -76,6 +101,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
     setSearch('');
     setSelectedBrand('all');
     setSelectedCategory('all');
+    setSelectedBudgetBracket('all');
     setMinPrice(undefined);
     setMaxPrice(undefined);
     setSortBy('confidence_score');
@@ -87,6 +113,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
     search !== '' ||
     selectedBrand !== 'all' ||
     selectedCategory !== 'all' ||
+    selectedBudgetBracket !== 'all' ||
     minPrice != null ||
     maxPrice != null;
 
@@ -97,15 +124,41 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-truespec-700 uppercase tracking-wider mb-1">
             <LaptopIcon className="w-4 h-4" />
-            <span>Complete Database Catalog</span>
+            <span>Complete Laptop Catalog (INR)</span>
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Browse All Scored Laptops
           </h1>
           <p className="text-slate-600 text-sm mt-1">
-            Explore {totalCount} laptop models with precomputed TrueSpec confidence ratings and specs.
+            Explore {totalCount} laptop models with precomputed TrueSpec confidence ratings, verified specs, and Indian Rupee (₹) pricing.
           </p>
         </div>
+      </div>
+
+      {/* Quick Budget Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        <span className="text-slate-500 font-bold uppercase tracking-wider text-[11px] shrink-0 mr-1">
+          Quick Budget:
+        </span>
+        {[
+          { id: 'all', label: 'All Budgets' },
+          { id: 'under-50k', label: 'Under ₹50,000' },
+          { id: '50k-100k', label: '₹50k – ₹1 Lakh' },
+          { id: '100k-150k', label: '₹1 Lakh – ₹1.5 Lakh' },
+          { id: 'above-150k', label: '₹1.5 Lakh & Above' }
+        ].map(b => (
+          <button
+            key={b.id}
+            onClick={() => handleBudgetSelect(b.id)}
+            className={`px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 ${
+              selectedBudgetBracket === b.id
+                ? 'bg-truespec-600 text-white shadow-xs'
+                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            {b.label}
+          </button>
+        ))}
       </div>
 
       {/* Search & Filter Bar */}
@@ -122,7 +175,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-truespec-500/20 focus:border-truespec-500 bg-slate-50/50"
+              className="w-full pl-10 pr-8 py-2 text-xs font-medium rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-truespec-500/20 focus:border-truespec-500 bg-slate-50/50"
             />
             {search && (
               <button
@@ -162,7 +215,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
               className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-truespec-500/20 text-slate-800"
             >
               <option value="all">All Categories</option>
-              {(stats?.categories || ['Ultrabook', 'Gaming', 'Productivity', 'Creator', 'Business', 'Budget']).map((c) => (
+              {(stats?.categories || ['Ultrabook', 'Gaming', 'Productivity', 'Creative', 'Business', 'Budget']).map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
@@ -179,11 +232,11 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ comparedLaptops, onToggl
                 }}
                 className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-truespec-500/20 text-slate-800"
               >
-                <option value="confidence_score">TrueSpec Confidence (High to Low)</option>
-                <option value="price">Price</option>
-                <option value="battery_wh">Battery Capacity</option>
+                <option value="confidence_score">Confidence Score (High to Low)</option>
+                <option value="price">Price (₹)</option>
+                <option value="battery_wh">Battery Size (Wh)</option>
                 <option value="weight_kg">Weight (Portability)</option>
-                <option value="cpu_score">CPU Power</option>
+                <option value="cpu_score">Processor Power</option>
               </select>
             </div>
 

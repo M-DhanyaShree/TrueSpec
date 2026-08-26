@@ -169,7 +169,7 @@ def ingest_specs(csv_path: str = None):
             'battery_wh': battery_wh,
             'weight_kg': weight_kg,
             'price': price_val,
-            'currency': 'USD',
+            'currency': 'INR',
             'os': os_name,
             'category': category
         })

@@ -56,7 +56,7 @@ export function computeRecommendations(
   req: RecommendationRequest
 ): RecommendedLaptop[] {
   const budgetMin = req.budgetMin ?? 0;
-  const budgetMax = req.budgetMax ?? 4000;
+  const budgetMax = req.budgetMax ?? 200000;
   const useCase = req.useCase || 'everyday';
   const osPref = req.preferredOs || 'any';
   const brandPrefs = (req.preferredBrands || []).map(b => b.toLowerCase());
@@ -71,8 +71,8 @@ export function computeRecommendations(
     valueForMoney: req.priorityWeights?.valueForMoney ?? 3,
   };
 
-  // Filter candidates by hard constraints (budget buffer of +10% allows near-budget exceptional matches)
-  const hardMaxBudget = budgetMax * 1.15;
+  // Filter candidates by hard constraints (budget buffer of +12% allows near-budget exceptional matches)
+  const hardMaxBudget = budgetMax * 1.12;
   const filtered = laptops.filter(laptop => {
     if (laptop.price > hardMaxBudget) return false;
     if (budgetMin > 0 && laptop.price < budgetMin * 0.7) return false;
@@ -99,7 +99,7 @@ export function computeRecommendations(
     // Battery score based on Wh (30Wh -> 40, 100Wh -> 100)
     const batteryScore = Math.min(100, Math.max(30, (laptop.battery_wh / 100) * 100));
 
-    // Portability score: inversely proportional to weight (1.0kg -> 100, 3.0kg -> 30)
+    // Portability score: inversely proportional to weight (0.9kg -> 100, 3.0kg -> 30)
     const portScore = Math.max(20, Math.min(100, 100 - (laptop.weight_kg - 0.9) * 35));
 
     // Display score (screen size, refresh rate, resolution tier)
@@ -109,10 +109,11 @@ export function computeRecommendations(
     // Confidence score from precomputed ML pipeline (Wilson lower bound + review cleanliness)
     const confScore = laptop.confidence_score ?? 50;
 
-    // Value for money (spec power per dollar)
+    // Value for money (spec power per INR unit)
     const specSum = perfScore * 0.4 + batteryScore * 0.3 + portScore * 0.3;
-    const priceRatio = (specSum / (laptop.price / 1000));
-    const valueScore = Math.min(100, Math.max(20, priceRatio * 0.8));
+    const priceInLakhs = Math.max(0.3, laptop.price / 100000);
+    const priceRatio = specSum / (priceInLakhs * 60);
+    const valueScore = Math.min(100, Math.max(25, priceRatio * 45));
 
     // 2. Use Case Alignment Multiplier
     let useCaseMultiplier = 1.0;
@@ -187,7 +188,7 @@ function generatePlainEnglishInsights(
 
   // Performance insights
   if (laptop.cpu_score >= 85) {
-    pros.push(`High-performance ${laptop.cpu_name} effortlessly handles intensive multi-tasking and compiling.`);
+    pros.push(`High-performance ${laptop.cpu_name} effortlessly handles heavy multi-tasking and compiling.`);
     highlights.push({ label: 'Processor', value: `${laptop.cpu_name} (Top Tier)`, isStrong: true });
   } else {
     highlights.push({ label: 'Processor', value: laptop.cpu_name, isStrong: false });
@@ -195,7 +196,7 @@ function generatePlainEnglishInsights(
 
   // GPU
   if (laptop.gpu_score >= 75) {
-    pros.push(`Dedicated ${laptop.gpu_name} enables smooth gaming and rapid 3D/video export acceleration.`);
+    pros.push(`Dedicated ${laptop.gpu_name} enables smooth gaming and fast video rendering.`);
     highlights.push({ label: 'Graphics', value: `${laptop.gpu_name} (Dedicated)`, isStrong: true });
   } else {
     highlights.push({ label: 'Graphics', value: laptop.gpu_name, isStrong: false });
@@ -203,20 +204,20 @@ function generatePlainEnglishInsights(
 
   // Portability & Battery
   if (laptop.weight_kg <= 1.35) {
-    pros.push(`Ultra-lightweight ${laptop.weight_kg}kg chassis makes it effortless to carry everywhere.`);
+    pros.push(`Ultra-lightweight ${laptop.weight_kg}kg chassis makes it effortless to carry in a backpack.`);
     highlights.push({ label: 'Weight', value: `${laptop.weight_kg} kg (Featherlight)`, isStrong: true });
   } else if (laptop.weight_kg >= 2.4) {
-    tradeoffs.push(`Heavier chassis (${laptop.weight_kg}kg) best suited for desk use rather than frequent commuting.`);
+    tradeoffs.push(`Heavier chassis (${laptop.weight_kg}kg) is best suited for desk use rather than frequent commuting.`);
     highlights.push({ label: 'Weight', value: `${laptop.weight_kg} kg (Heavy)`, isStrong: false });
   } else {
     highlights.push({ label: 'Weight', value: `${laptop.weight_kg} kg`, isStrong: false });
   }
 
   if (laptop.battery_wh >= 70) {
-    pros.push(`Generous ${laptop.battery_wh}Wh battery capacity delivers dependable all-day runtime away from outlets.`);
+    pros.push(`Large ${laptop.battery_wh}Wh battery capacity delivers dependable all-day runtime.`);
     highlights.push({ label: 'Battery', value: `${laptop.battery_wh} Wh (All-Day)`, isStrong: true });
   } else if (laptop.battery_wh < 50) {
-    tradeoffs.push(`Smaller ${laptop.battery_wh}Wh battery may require keeping the charger nearby during extended work.`);
+    tradeoffs.push(`Smaller ${laptop.battery_wh}Wh battery means you should keep your charger handy for long sessions.`);
     highlights.push({ label: 'Battery', value: `${laptop.battery_wh} Wh`, isStrong: false });
   } else {
     highlights.push({ label: 'Battery', value: `${laptop.battery_wh} Wh`, isStrong: false });
@@ -224,7 +225,7 @@ function generatePlainEnglishInsights(
 
   // Display
   if (laptop.refresh_rate >= 120) {
-    pros.push(`Smooth ${laptop.refresh_rate}Hz display offers fluid scrolling and high-frame-rate responsiveness.`);
+    pros.push(`Smooth ${laptop.refresh_rate}Hz display offers fluid scrolling and high responsiveness.`);
     highlights.push({ label: 'Display', value: `${laptop.display_size}" @ ${laptop.refresh_rate}Hz`, isStrong: true });
   } else {
     highlights.push({ label: 'Display', value: `${laptop.display_size}" @ 60Hz`, isStrong: false });
@@ -232,29 +233,30 @@ function generatePlainEnglishInsights(
 
   // RAM & Storage
   if (laptop.ram_gb >= 32) {
-    pros.push(`Massive ${laptop.ram_gb}GB memory allows heavy Docker containers, virtual machines, and 4K timelines.`);
+    pros.push(`Massive ${laptop.ram_gb}GB memory allows heavy Docker containers, virtual machines, and 4K editing.`);
   } else if (laptop.ram_gb < 16) {
-    tradeoffs.push(`${laptop.ram_gb}GB RAM is sufficient for standard browsing but limited for heavy future workflows.`);
+    tradeoffs.push(`${laptop.ram_gb}GB RAM is sufficient for everyday tasks, but 16GB is recommended for heavy future workloads.`);
   }
 
-  // Plain-English Explanation Builder
+  // Plain-English Explanation Builder with INR
   const cleanCount = laptop.clean_review_count ?? 15;
   const useCaseText = req.useCase ? req.useCase.charAt(0).toUpperCase() + req.useCase.slice(1) : 'everyday computing';
+  const formattedPrice = `₹${Number(laptop.price).toLocaleString('en-IN')}`;
   
   let explanation = `Why TrueSpec recommends the ${laptop.brand} ${laptop.model_name}: `;
-  if (laptop.price <= (req.budgetMax ?? 2000)) {
-    explanation += `It hits an optimal balance for your ${useCaseText} workflow at $${laptop.price}. `;
+  if (laptop.price <= (req.budgetMax ?? 150000)) {
+    explanation += `It hits an optimal balance for your ${useCaseText} workflow at ${formattedPrice}. `;
   } else {
-    explanation += `It slightly stretches your budget to $${laptop.price} in exchange for a significant upgrade in hardware longevity. `;
+    explanation += `It slightly extends your budget to ${formattedPrice} in exchange for a significant upgrade in hardware longevity. `;
   }
 
   if (laptop.weight_kg <= 1.4 && laptop.battery_wh >= 55) {
-    explanation += `You get outstanding travel freedom with a ${laptop.weight_kg}kg frame and all-day ${laptop.battery_wh}Wh battery life. `;
+    explanation += `You get outstanding travel freedom with a lightweight ${laptop.weight_kg}kg frame and dependable ${laptop.battery_wh}Wh battery life. `;
   } else if (laptop.gpu_score >= 75) {
     explanation += `Its powerful ${laptop.gpu_name} graphics and multi-core processor provide the raw horsepower you need. `;
   }
 
-  explanation += `Backed by an ML-verified ${confidenceScore}/100 TrueSpec Confidence Score calculated across ${cleanCount} authenticated user reviews.`;
+  explanation += `Backed by a verified ${confidenceScore}/100 TrueSpec Confidence Score calculated across ${cleanCount} spam-filtered user reviews.`;
 
   return {
     explanation,
