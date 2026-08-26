@@ -16,6 +16,18 @@ async function ensureSchemaAndSeed(db: Knex): Promise<void> {
     console.log('[TrueSpec Backend] Schema tables initialized successfully.');
   }
 
+  // Ensure all columns in `laptops` table have sensible defaults (auto-heal older schemas)
+  if (await db.schema.hasTable('laptops')) {
+    const hasResolution = await db.schema.hasColumn('laptops', 'resolution');
+    if (hasResolution) {
+      try {
+        await db.raw('ALTER TABLE `laptops` MODIFY COLUMN `resolution` VARCHAR(255) NULL DEFAULT "1920x1080"');
+      } catch {
+        // Fallback for non-MySQL or already nullable
+      }
+    }
+  }
+
   // Ensure all columns exist in `reviews` table (auto-heal older schemas)
   if (await db.schema.hasTable('reviews')) {
     const hasSentiment = await db.schema.hasColumn('reviews', 'sentiment_label');
@@ -71,7 +83,11 @@ export async function getDb(): Promise<Knex> {
     console.log(`[TrueSpec Backend] Connected to MySQL database (${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306})`);
     
     // Ensure all tables and seed data exist in MySQL
-    await ensureSchemaAndSeed(testKnex);
+    try {
+      await ensureSchemaAndSeed(testKnex);
+    } catch (seedErr: any) {
+      console.warn(`[TrueSpec Backend] Auto-seeding notice in MySQL: ${seedErr.message}`);
+    }
     
     dbInstance = testKnex;
     return dbInstance;
@@ -84,7 +100,7 @@ export async function getDb(): Promise<Knex> {
     dbInstance = knex(sqliteConfig);
 
     // Ensure schema and seed exist on SQLite fallback
-    await ensureSchemaAndSeed(dbInstance);
+    await ensureSchemaAndSeed(dbInstance).catch(() => {});
     return dbInstance;
   }
 }

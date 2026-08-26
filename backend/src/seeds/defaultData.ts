@@ -917,13 +917,15 @@ export async function seedDefaultLaptopsIfEmpty(knex: Knex): Promise<void> {
 
   console.log('[TrueSpec Auto-Seeder] Seeding default laptop dataset and precomputed TrueSpec confidence scores into database...');
 
+  const hasResolution = await knex.schema.hasColumn('laptops', 'resolution').catch(() => false);
+
   for (const item of DEFAULT_LAPTOPS) {
     // Check if laptop exists
-    let existing = await knex('laptops').where('brand', item.brand).andWhere('model_name', item.model_name).first();
-    let laptopId: number;
+    let existing = await knex('laptops').where('brand', item.brand).andWhere('model_name', item.model_name).first().catch(() => null);
+    let laptopId: number | undefined;
 
     if (!existing) {
-      const [insertedId] = await knex('laptops').insert({
+      const laptopData: Record<string, any> = {
         brand: item.brand,
         model_name: item.model_name,
         cpu_name: item.cpu_name,
@@ -941,7 +943,13 @@ export async function seedDefaultLaptopsIfEmpty(knex: Knex): Promise<void> {
         currency: item.currency,
         os: item.os,
         category: item.category
-      });
+      };
+
+      if (hasResolution) {
+        laptopData.resolution = item.brand === 'Apple' ? '2560x1664' : '1920x1080';
+      }
+
+      const [insertedId] = await knex('laptops').insert(laptopData);
       laptopId = typeof insertedId === 'number' ? insertedId : (insertedId as any)?.id || 1;
       // In MySQL knex insert returns [insertId]
       if (!laptopId && typeof insertedId === 'object') {
