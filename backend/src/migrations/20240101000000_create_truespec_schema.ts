@@ -1,4 +1,4 @@
-import { Knex } from 'knex';
+import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   // 1. laptops table
@@ -32,8 +32,7 @@ export async function up(knex: Knex): Promise<void> {
   if (!hasReviews) {
     await knex.schema.createTable('reviews', (table) => {
       table.increments('id').primary();
-      table.integer('laptop_id').unsigned().notNullable()
-        .references('id').inTable('laptops').onDelete('CASCADE').index();
+      table.integer('laptop_id').notNullable().index();
       table.string('source', 100).notNullable();
       table.text('review_text').notNullable();
       table.float('rating').notNullable();
@@ -50,8 +49,7 @@ export async function up(knex: Knex): Promise<void> {
   if (!hasScores) {
     await knex.schema.createTable('laptop_scores', (table) => {
       table.increments('id').primary();
-      table.integer('laptop_id').unsigned().notNullable().unique()
-        .references('id').inTable('laptops').onDelete('CASCADE');
+      table.integer('laptop_id').notNullable().unique().index();
       table.float('confidence_score').notNullable().index();
       table.float('wilson_lower_bound').notNullable();
       table.float('positive_ratio').notNullable();
